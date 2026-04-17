@@ -64,15 +64,17 @@ $modules = @(
 
 function Invoke-Ilasm {
     param([string]$source, [string]$output, [string]$kind)
-    $flag = if ($kind -eq 'Exe') { '/exe' } else { '/dll' }
+    # Use `-` prefix for flags: Linux/macOS ilasm only recognizes `-`, while
+    # Windows ilasm accepts both — so `-` is the portable choice.
+    $flag = if ($kind -eq 'Exe') { '-exe' } else { '-dll' }
     Write-Host ">> ilasm $flag $source -> $output"
     # Modernize PE to match what Roslyn produces — helps Smart App Control
     # treat the binary as a normal .NET assembly rather than a "legacy" one:
-    #   /X64            PE32+ / AMD64 machine type
-    #   /HIGHENTROPYVA  64-bit ASLR capable
-    #   /DET            deterministic MVID + timestamps (stable hash)
-    & $ilasm $flag /X64 /HIGHENTROPYVA /DET `
-             "/output:$output" /optimize /nologo /quiet $source
+    #   -X64            PE32+ / AMD64 machine type
+    #   -HIGHENTROPYVA  64-bit ASLR capable
+    #   -DET            deterministic MVID + timestamps (stable hash)
+    & $ilasm $flag -X64 -HIGHENTROPYVA -DET `
+             "-output:$output" -optimize -nologo -quiet $source
     if ($LASTEXITCODE -ne 0) { throw "ilasm failed for $source" }
 }
 
