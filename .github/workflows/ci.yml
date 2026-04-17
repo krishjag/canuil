@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-test-run:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install ilverify
+        run: dotnet tool install --global dotnet-ilverify
+
+      - name: Bootstrap ilasm
+        run: ./scripts/bootstrap.ps1
+
+      - name: Build + Verify
+        run: ./scripts/build.ps1 -Target All
+
+      - name: Run tests
+        run: dotnet ./build/Canuil.Tests.dll
+
+      - name: Run Canuil.App
+        run: dotnet ./build/Canuil.App.dll

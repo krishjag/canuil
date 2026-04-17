@@ -1,0 +1,16 @@
+# Build outputs
+build/
+
+# Bootstrapped tooling (restored via bootstrap.ps1)
+tools/
+
+# Local Claude Code settings
+.claude/
+
+# Editor / OS noise
+.vs/
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+.DS_Store
