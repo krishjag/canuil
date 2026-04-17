@@ -81,11 +81,17 @@ function Invoke-Ilasm {
 function Invoke-IlVerify {
     param([string]$assembly)
     Write-Host ">> ilverify $assembly"
-    # Peer DLLs in $outDir are added as refs individually, EXCLUDING the one
-    # being verified. Including it (e.g. via a `build/*.dll` glob) causes
-    # ilverify on Linux to error with "Multiple input files matching same
-    # simple name" because the assembly-under-test and a -r entry collide.
-    $refArgs = @('-r', (Join-Path $runtimePack '*.dll'))
+    # References must be enumerated individually. A glob like
+    # `-r $runtimePack/*.dll` works on Windows but on Linux ilverify ends up
+    # treating the glob-matched files as verification inputs (some BCL DLLs
+    # like System.Web.HttpUtility.dll aren't strictly verifiable, so the run
+    # fails). Peer DLLs exclude the one under test to avoid
+    # "Multiple input files matching same simple name".
+    $refArgs = @()
+    foreach ($ref in Get-ChildItem -Path $runtimePack -Filter '*.dll') {
+        $refArgs += '-r'
+        $refArgs += $ref.FullName
+    }
     foreach ($peer in Get-ChildItem -Path $outDir -Filter '*.dll') {
         if ($peer.FullName -ne $assembly) {
             $refArgs += '-r'
