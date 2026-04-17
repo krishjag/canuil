@@ -81,10 +81,17 @@ function Invoke-Ilasm {
 function Invoke-IlVerify {
     param([string]$assembly)
     Write-Host ">> ilverify $assembly"
-    $refArgs = @(
-        '-r', (Join-Path $runtimePack '*.dll'),
-        '-r', (Join-Path $outDir      '*.dll')
-    )
+    # Peer DLLs in $outDir are added as refs individually, EXCLUDING the one
+    # being verified. Including it (e.g. via a `build/*.dll` glob) causes
+    # ilverify on Linux to error with "Multiple input files matching same
+    # simple name" because the assembly-under-test and a -r entry collide.
+    $refArgs = @('-r', (Join-Path $runtimePack '*.dll'))
+    foreach ($peer in Get-ChildItem -Path $outDir -Filter '*.dll') {
+        if ($peer.FullName -ne $assembly) {
+            $refArgs += '-r'
+            $refArgs += $peer.FullName
+        }
+    }
     & ilverify $assembly @refArgs
     if ($LASTEXITCODE -ne 0) { throw "ilverify failed for $assembly" }
 }
